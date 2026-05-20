@@ -208,6 +208,7 @@ html.light ::-webkit-scrollbar-thumb { background: rgba(120,70,20,0.22); border-
 ═══════════════════════════════════════════ */
 @layer base {
   * { @apply border-border; }
+  html, body { overflow-x: hidden; max-width: 100%; }
   body { @apply font-sans antialiased bg-background text-foreground; }
 
   /* Prevent Chrome Android Force Dark Mode from inverting question images.

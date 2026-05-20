@@ -35,6 +35,18 @@ function tokenize(input: string): Segment[] {
       const end = input.indexOf("]", i + 5);
       if (end !== -1) { const url = input.slice(i + 5, end).trim(); if (url) { flush(); segments.push({ type: "image", value: url }); i = end + 1; continue; } }
     }
+    // Bare image URLs: https://... ending in image extension
+    if ((ch === "h" || ch === "H") && (input.slice(i, i + 8).toLowerCase() === "https://" || input.slice(i, i + 7).toLowerCase() === "http://")) {
+      let j = i;
+      while (j < n && input[j] !== " " && input[j] !== "\n" && input[j] !== "\t" && input[j] !== "\r") j++;
+      const candidate = input.slice(i, j);
+      if (/\.(jpe?g|png|gif|webp|svg|bmp|tiff?)(\?[^\s]*)?$/i.test(candidate)) {
+        flush();
+        segments.push({ type: "image", value: candidate });
+        i = j;
+        continue;
+      }
+    }
     if (ch === "$" && next === "$") {
       const end = input.indexOf("$$", i + 2);
       if (end !== -1) { flush(); segments.push({ type: "math-display", value: input.slice(i + 2, end) }); i = end + 2; continue; }
