@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import {
   ChevronRight, Home as HomeIcon, Plus, FolderIcon,
   GripVertical, Check, BookOpen, BookMarked,
-  Loader2, Settings,
+  Loader2, Settings, Trash2,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
