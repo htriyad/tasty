@@ -19,9 +19,10 @@ let _io: IO;
 
 export function setIO(io: IO) { _io = io; }
 
-function emit(game: ActiveGame, event: string, data: unknown) {
-  if (game.player1.socketId !== BOT_SOCKET_ID) _io.to(game.player1.socketId).emit(event, data);
-  if (game.player2.socketId !== BOT_SOCKET_ID) _io.to(game.player2.socketId).emit(event, data);
+type EmitEvent = keyof import("./types.js").ServerToClientEvents;
+function emit(game: ActiveGame, event: EmitEvent, data: unknown) {
+  if (game.player1.socketId !== BOT_SOCKET_ID) _io.to(game.player1.socketId).emit(event, data as never);
+  if (game.player2.socketId !== BOT_SOCKET_ID) _io.to(game.player2.socketId).emit(event, data as never);
 }
 
 export function getGameBySocketId(socketId: string): ActiveGame | undefined {

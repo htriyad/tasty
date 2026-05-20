@@ -68,7 +68,7 @@ export default function ImportPage() {
         onError: (error) => {
           toast({
             title: "Import Failed",
-            description: error?.error || "An error occurred during import.",
+            description: (error?.data as { error?: string })?.error || "An error occurred during import.",
             variant: "destructive",
           });
         },

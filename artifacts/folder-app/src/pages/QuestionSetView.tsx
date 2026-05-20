@@ -2126,7 +2126,7 @@ export function QuestionSetView() {
             isHighlighted={highlightedId === q.id}
             isLight={isLight}
             isBookmarked={bookmarkIds.has(q.id)}
-            onBookmark={() => toggleBookmark(q, data?.name ?? "")}
+            onBookmark={() => toggleBookmark(q, data?.set?.name ?? "")}
           />
         ))}
         {/* Exam submit */}

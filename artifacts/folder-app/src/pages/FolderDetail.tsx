@@ -27,7 +27,7 @@ export default function FolderDetail() {
 
   const { data: subfolders, isLoading: subfoldersLoading } = useListFolders(
     { parentId: folderId },
-    { query: { enabled: !!folderId } }
+    { query: { enabled: !!folderId, queryKey: ["folders", "list", { parentId: folderId }] } }
   );
 
   const { data: questionSets, isLoading: setsLoading } = useListQuestionSets(folderId, {

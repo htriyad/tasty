@@ -81,8 +81,8 @@ export function registerBattleHandlers(io: IO) {
       }
     }
 
-    socket.on("join_queue", (scope) => { void handleJoin(scope ?? {}, false); });
-    socket.on("join_bot_queue", (scope) => { void handleJoin(scope ?? {}, true); });
+    socket.on("join_queue", (scope: BattleScope) => { void handleJoin(scope ?? {}, false); });
+    socket.on("join_bot_queue", (scope: BattleScope) => { void handleJoin(scope ?? {}, true); });
 
     socket.on("leave_queue", () => {
       try {
@@ -93,7 +93,7 @@ export function registerBattleHandlers(io: IO) {
       }
     });
 
-    socket.on("answer", ({ battleId, questionIndex, option }) => {
+    socket.on("answer", ({ battleId, questionIndex, option }: { battleId: number; questionIndex: number; option: string }) => {
       try {
         const game = getGameBySocketId(socket.id);
         if (!game || game.battleId !== battleId) return;

@@ -31,7 +31,7 @@ export default function Folders() {
   const { data: rootFolders, isLoading } = useListFolders({ parentId: null });
   const { data: searchResults, isLoading: isSearching } = useListFolders(
     { search, flat: true },
-    { query: { enabled: search.length > 2 } }
+    { query: { enabled: search.length > 2, queryKey: ["folders", "search", search] } }
   );
 
   const createFolder = useCreateFolder();

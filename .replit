@@ -29,7 +29,7 @@ externalPort = 80
 
 [[ports]]
 localPort = 8082
-externalPort = 3002
+externalPort = 3000
 
 [[ports]]
 localPort = 8083
@@ -37,13 +37,20 @@ externalPort = 3001
 
 [[ports]]
 localPort = 8084
+externalPort = 3002
+
+[[ports]]
+localPort = 8085
 externalPort = 3003
 
 [[ports]]
+localPort = 8086
+externalPort = 4200
+
+[[ports]]
+localPort = 8087
+externalPort = 5000
+
+[[ports]]
 localPort = 24503
-externalPort = 3000
-
-[userenv]
-
-[userenv.shared]
-NEON_DATABASE_URL = "postgresql://neondb_owner:npg_mPh3OLHZ0NkJ@ep-steep-bird-aomf5w9e.c-2.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+externalPort = 5173
