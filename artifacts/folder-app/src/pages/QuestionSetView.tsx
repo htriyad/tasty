@@ -519,8 +519,8 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
 
   return (
     <div ref={cardRef}
-      className={`chorcha-question-card rounded-2xl border bg-white/3 overflow-hidden w-full min-w-0 scroll-mt-20 relative transition-all ${selectMode ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-indigo-500/70" : ""} ${isHighlighted ? "ring-2 ring-amber-400/80 shadow-[0_0_24px_4px_rgba(251,191,36,0.18)]" : ""}`}
-      style={{ borderColor: selected ? "#6366f1" : isHighlighted ? "rgba(251,191,36,0.5)" : qBorderColor }}
+      className={`chorcha-question-card border-0 border-b bg-white/3 overflow-hidden w-full min-w-0 scroll-mt-20 relative transition-all ${selectMode ? "cursor-pointer" : ""} ${selected ? "outline outline-2 outline-indigo-500/70" : ""} ${isHighlighted ? "outline outline-2 outline-amber-400/80 shadow-[0_0_24px_4px_rgba(251,191,36,0.18)]" : ""}`}
+      style={{ borderBottomColor: selected ? "#6366f1" : isHighlighted ? "rgba(251,191,36,0.5)" : "rgba(255,255,255,0.06)" }}
       onClick={selectMode ? (e) => { e.stopPropagation(); onToggleSelect?.(); } : undefined}>
       {/* Select overlay checkbox */}
       {selectMode && (
@@ -2101,7 +2101,7 @@ export function QuestionSetView() {
       </div>
 
       {/* ── Question list ── */}
-      <div className={`flex-1 w-full min-w-0 px-3 sm:px-5 space-y-3 pt-16 overflow-x-hidden ${isPractice || (isExam && !examSubmitted) ? "pb-40" : "pb-28"}`}>
+      <div className={`flex-1 w-full min-w-0 px-0 space-y-px pt-16 overflow-x-hidden ${isPractice || (isExam && !examSubmitted) ? "pb-40" : "pb-28"}`}>
         {visible.map((q, idx) => (
           <LazyCard
             key={q.id}
