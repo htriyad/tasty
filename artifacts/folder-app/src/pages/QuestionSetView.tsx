@@ -519,7 +519,7 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
 
   return (
     <div ref={cardRef}
-      className={`chorcha-question-card rounded-2xl border bg-white/3 overflow-hidden scroll-mt-20 relative transition-all ${selectMode ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-indigo-500/70" : ""} ${isHighlighted ? "ring-2 ring-amber-400/80 shadow-[0_0_24px_4px_rgba(251,191,36,0.18)]" : ""}`}
+      className={`chorcha-question-card rounded-2xl border bg-white/3 overflow-hidden w-full min-w-0 scroll-mt-20 relative transition-all ${selectMode ? "cursor-pointer" : ""} ${selected ? "ring-2 ring-indigo-500/70" : ""} ${isHighlighted ? "ring-2 ring-amber-400/80 shadow-[0_0_24px_4px_rgba(251,191,36,0.18)]" : ""}`}
       style={{ borderColor: selected ? "#6366f1" : isHighlighted ? "rgba(251,191,36,0.5)" : qBorderColor }}
       onClick={selectMode ? (e) => { e.stopPropagation(); onToggleSelect?.(); } : undefined}>
       {/* Select overlay checkbox */}
@@ -2036,7 +2036,7 @@ export function QuestionSetView() {
           onClick={e => e.stopPropagation()} />
       </div>
     )}
-    <div className="min-h-[100dvh] flex flex-col">
+    <div className="min-h-[100dvh] flex flex-col overflow-x-hidden">
       {/* ── Sticky header ── */}
       <div className="fixed top-0 left-0 right-0 z-20 bg-background/95 backdrop-blur-md border-b border-white/8">
         <div className="w-full px-4 py-2.5 flex items-center gap-3">
@@ -2101,7 +2101,7 @@ export function QuestionSetView() {
       </div>
 
       {/* ── Question list ── */}
-      <div className={`flex-1 w-full px-3 sm:px-5 space-y-3 pt-16 ${isPractice || (isExam && !examSubmitted) ? "pb-40" : "pb-28"}`}>
+      <div className={`flex-1 w-full min-w-0 px-3 sm:px-5 space-y-3 pt-16 overflow-x-hidden ${isPractice || (isExam && !examSubmitted) ? "pb-40" : "pb-28"}`}>
         {visible.map((q, idx) => (
           <LazyCard
             key={q.id}

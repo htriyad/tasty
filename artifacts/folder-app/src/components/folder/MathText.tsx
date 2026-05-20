@@ -17,6 +17,8 @@ interface Segment {
 
 function tokenize(input: string): Segment[] {
   if (!input) return [];
+  // Convert literal \n escape sequences to real newlines
+  input = input.replace(/\\n/g, "\n");
   const segments: Segment[] = [];
   let i = 0;
   const n = input.length;

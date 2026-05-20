@@ -240,6 +240,26 @@ html.light body {
 ═══════════════════════════════════════════ */
 .chorcha-question-card {
   transition: background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  max-width: 100%;
+  min-width: 0;
+}
+.chorcha-q-body,
+.chorcha-question-card .text-sm,
+.chorcha-question-card p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden;
+  max-width: 100%;
+}
+.chorcha-q-body .katex-display,
+.chorcha-question-card .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+.chorcha-question-card .katex {
+  max-width: 100%;
 }
 
 html.dark .chorcha-question-card,
