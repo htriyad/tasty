@@ -15,7 +15,6 @@ router.get("/questions/lookup", async (req, res) => {
   const id = parseInt(req.query.id as string, 10);
   if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid question id" });
 
-  // First check if it's an owned question
   const [owned] = await db
     .select({
       id: questionsTable.id,
@@ -59,12 +58,10 @@ router.get("/sets/:id", async (req, res) => {
   const [set] = await db.select().from(questionSetsTable).where(eq(questionSetsTable.id, id)).limit(1);
   if (!set) return res.status(404).json({ error: "Question set not found" });
 
-  // Owned questions
   const owned = await db.select().from(questionsTable)
     .where(eq(questionsTable.setId, id))
     .orderBy(asc(questionsTable.questionIndex));
 
-  // Linked questions (zero-copy references from other sets)
   const links = await db.select().from(setQuestionLinksTable)
     .where(eq(setQuestionLinksTable.setId, id))
     .orderBy(asc(setQuestionLinksTable.questionIndex));
@@ -79,7 +76,6 @@ router.get("/sets/:id", async (req, res) => {
     }).filter(q => q.id != null);
   }
 
-  // Merge owned + linked, sort by questionIndex
   const questions = [...owned.map(q => ({ ...q, linkId: null as number | null, hiddenParts: [] as string[] })), ...linked]
     .sort((a, b) => a.questionIndex - b.questionIndex);
 
@@ -129,13 +125,11 @@ router.post("/folders/:id/sets/reorder", async (req, res) => {
   return res.json({ ok: true });
 });
 
-// Reorder questions: renumbers all questions serially so serial = position
 router.post("/sets/:id/questions/reorder", async (req, res) => {
   const setId = parseInt(req.params.id, 10);
   if (!Number.isFinite(setId)) return res.status(400).json({ error: "Invalid set id" });
   const items: { id: number; position: number }[] = req.body?.items ?? [];
   if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "items required" });
-  // Use sequential positions 1,2,3... to keep serial numbers clean
   await Promise.all(items.map(item =>
     db.update(questionsTable).set({ questionIndex: item.position }).where(eq(questionsTable.id, item.id))
   ));
@@ -204,8 +198,6 @@ router.delete("/questions/:id", async (req, res) => {
   return res.status(204).send();
 });
 
-// ── Link endpoints ─────────────────────────────────────────────────────────────
-
 router.post("/sets/:setId/link-questions", async (req, res) => {
   const setId = parseInt(req.params.setId, 10);
   if (!Number.isFinite(setId)) return res.status(400).json({ error: "Invalid set id" });
@@ -215,19 +207,16 @@ router.post("/sets/:setId/link-questions", async (req, res) => {
   const questionIds: number[] = Array.isArray(req.body?.questionIds) ? req.body.questionIds : [];
   if (questionIds.length === 0) return res.status(400).json({ error: "questionIds required" });
 
-  // Find highest current index in the target set (owned + linked)
   const [ownedMax] = await db.select({ max: sql<number>`COALESCE(MAX(${questionsTable.questionIndex}), 0)` })
     .from(questionsTable).where(eq(questionsTable.setId, setId));
   const [linkedMax] = await db.select({ max: sql<number>`COALESCE(MAX(${setQuestionLinksTable.questionIndex}), 0)` })
     .from(setQuestionLinksTable).where(eq(setQuestionLinksTable.setId, setId));
   let nextIndex = Math.max(Number(ownedMax?.max ?? 0), Number(linkedMax?.max ?? 0)) + 1;
 
-  // Skip questions already linked to avoid duplicate constraint
   const existing = await db.select({ questionId: setQuestionLinksTable.questionId })
     .from(setQuestionLinksTable).where(eq(setQuestionLinksTable.setId, setId));
   const existingIds = new Set(existing.map(e => e.questionId));
 
-  // Also skip questions owned by this set already
   const ownedQs = await db.select({ id: questionsTable.id }).from(questionsTable).where(eq(questionsTable.setId, setId));
   const ownedIds = new Set(ownedQs.map(q => q.id));
 

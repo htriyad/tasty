@@ -10,7 +10,7 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use(foldersRouter);
 router.use(questionSetsRouter);
-router.use("/chorcha", chorchaRouter);
+router.use(chorchaRouter);
 router.use(migrateRouter);
 
 export default router;

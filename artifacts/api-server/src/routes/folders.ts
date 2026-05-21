@@ -192,7 +192,6 @@ router.patch("/folders/:id", async (req, res): Promise<void> => {
   if (body.data.style !== undefined) updates.style = body.data.style;
   if ("parentId" in body.data) {
     const newParentId = body.data.parentId ?? null;
-    // Cycle check: cannot move into itself or a descendant
     if (newParentId === params.data.id) {
       res.status(400).json({ error: "Cannot move a folder into itself" });
       return;
