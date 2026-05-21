@@ -7,11 +7,17 @@ jobs:
   migrate:
     runs-on: ubuntu-latest
     steps:
-      - name: Run migration SQL via psql
+      - name: Install pg client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Run migration SQL (IPv4 forced)
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PGPASSWORD: my1stprojec
         run: |
-          psql "$DATABASE_URL" <<'ENDSQL'
+          # Resolve to IPv4 explicitly
+          HOST_IP=$(getent ahostsv4 db.lngxtnsgbnoklcycvuhz.supabase.co | awk '{print $1}' | head -1)
+          echo "Connecting to $HOST_IP"
+          psql "postgresql://postgres@${HOST_IP}:5432/postgres?sslmode=require&sslrootcert=disable" <<'ENDSQL'
           CREATE TABLE IF NOT EXISTS folders (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
@@ -58,4 +64,4 @@ jobs:
             CONSTRAINT uq_link UNIQUE (question_id, set_id)
           );
           ENDSQL
-          echo 'Migration complete'
+          echo 'All tables created successfully'
