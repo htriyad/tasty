@@ -10,14 +10,11 @@ jobs:
       - name: Install pg client
         run: sudo apt-get install -y postgresql-client
 
-      - name: Run migration SQL (IPv4 forced)
+      - name: Run migration SQL via Supabase pooler (IPv4)
         env:
           PGPASSWORD: my1stprojec
         run: |
-          # Resolve to IPv4 explicitly
-          HOST_IP=$(getent ahostsv4 db.lngxtnsgbnoklcycvuhz.supabase.co | awk '{print $1}' | head -1)
-          echo "Connecting to $HOST_IP"
-          psql "postgresql://postgres@${HOST_IP}:5432/postgres?sslmode=require&sslrootcert=disable" <<'ENDSQL'
+          psql "postgresql://postgres.lngxtnsgbnoklcycvuhz:my1stprojec@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require" <<'ENDSQL'
           CREATE TABLE IF NOT EXISTS folders (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
