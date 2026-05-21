@@ -10,11 +10,11 @@ jobs:
       - name: Install pg client
         run: sudo apt-get install -y postgresql-client
 
-      - name: Run migration SQL via Supabase pooler (IPv4)
+      - name: Run migration SQL via DATABASE_URL
         env:
-          PGPASSWORD: my1stprojec
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          psql "postgresql://postgres.lngxtnsgbnoklcycvuhz:my1stprojec@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres?sslmode=require" <<'ENDSQL'
+          psql "$DATABASE_URL" <<'ENDSQL'
           CREATE TABLE IF NOT EXISTS folders (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
