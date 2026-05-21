@@ -4,6 +4,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { registerBattleHandlers } from "./battle/socketHandlers.js";
 import type { ClientToServerEvents, ServerToClientEvents, SocketData } from "./battle/types.js";
+import { runMigrations } from "@workspace/db/migrate";
 
 const rawPort = process.env["PORT"];
 
@@ -41,6 +42,14 @@ httpServer.on("error", (err) => {
   logger.error({ err }, "HTTP server error");
 });
 
-httpServer.listen(port, () => {
-  logger.info({ port }, "Server listening with Socket.IO");
-});
+runMigrations()
+  .then(() => {
+    logger.info("DB migrations complete");
+    httpServer.listen(port, () => {
+      logger.info({ port }, "Server listening with Socket.IO");
+    });
+  })
+  .catch((err) => {
+    logger.error({ err }, "DB migration failed — exiting");
+    process.exit(1);
+  });
