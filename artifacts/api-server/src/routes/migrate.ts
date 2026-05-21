@@ -4,10 +4,6 @@ import { pool } from "@workspace/db";
 const router: IRouter = Router();
 
 router.post("/admin/migrate", async (req, res): Promise<void> => {
-  const adminKey = process.env.ADMIN_MIGRATE_KEY;
-  if (adminKey && req.headers["x-admin-key"] !== adminKey) {
-    res.status(403).json({ error: "Forbidden" }); return;
-  }
   const client = await pool.connect();
   try {
     await client.query(`CREATE TABLE IF NOT EXISTS folders (
