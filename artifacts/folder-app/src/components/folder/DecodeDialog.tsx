@@ -9,6 +9,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getListQuestionSetsQueryKey } from "@workspace/api-client-react";
 import { Loader2, Link2, Key, BookOpen, CheckCircle, AlertCircle, Database, RefreshCw, Wand2, RotateCcw } from "lucide-react";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 type ForceType = "auto" | "mcq" | "cq" | "sq";
 
 const FORCE_TYPE_OPTIONS: { value: ForceType; label: string; desc: string; color: string }[] = [
@@ -95,7 +97,7 @@ export function DecodeDialog({ open, onOpenChange, folderId, folderColor }: Deco
   const handleBankDecode = async () => {
     setProgress({ phase: "fetching-bank" });
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/chorcha/decode-bank-to-folder`, {
+      const res = await fetch(`${API_BASE}/api/chorcha/decode-bank-to-folder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folderId, input: url.trim(), token: token.trim(), typeHint: apiTypeHint, replace: replaceMode }),
@@ -119,7 +121,7 @@ export function DecodeDialog({ open, onOpenChange, folderId, folderColor }: Deco
   const handleSingleDecode = async () => {
     setProgress({ phase: "decoding" });
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/chorcha/decode-to-folder`, {
+      const res = await fetch(`${API_BASE}/api/chorcha/decode-to-folder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folderId, input: url.trim(), token: token.trim(), name: name.trim() || undefined, typeHint: apiTypeHint }),

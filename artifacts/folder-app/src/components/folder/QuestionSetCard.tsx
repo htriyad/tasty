@@ -6,6 +6,8 @@ import { QuestionSet, useDeleteQuestionSet, getListQuestionSetsQueryKey } from "
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 interface QuestionSetCardProps {
   set: QuestionSet;
   index: number;
@@ -68,7 +70,7 @@ export function QuestionSetCard({
     if (!trimmed || trimmed === set.name) { setRenaming(false); return; }
     setSaving(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/sets/${set.id}`, {
+      const res = await fetch(`${API_BASE}/api/sets/${set.id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: trimmed }),
       });
       if (!res.ok) throw new Error();

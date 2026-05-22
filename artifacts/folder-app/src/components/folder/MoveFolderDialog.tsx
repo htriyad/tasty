@@ -6,6 +6,8 @@ import { getIcon } from "@/lib/folderIcons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 interface MoveFolderDialogProps {
   folder: Folder | null;
   onClose: () => void;
@@ -82,7 +84,7 @@ export function MoveFolderDialog({ folder, onClose, onMoved }: MoveFolderDialogP
     if (!folder || moving) return;
     setMoving(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/folders/${folder.id}`, {
+      const res = await fetch(`${API_BASE}/api/folders/${folder.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ parentId: targetParentId }),

@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { AnimatePresence, motion } from "framer-motion";
 import { Search, X, ArrowRight, Loader2, BookMarked, AlertCircle } from "lucide-react";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 interface LookupResult {
   id: number;
   type: string;
@@ -48,7 +50,7 @@ export function QuestionIdSearch({ open, onClose }: Props) {
       setResult(null);
       setNotFound(false);
       try {
-        const res = await fetch(`${import.meta.env.BASE_URL}api/questions/lookup?id=${id}`);
+        const res = await fetch(`${API_BASE}/api/questions/lookup?id=${id}`);
         if (res.ok) {
           setResult(await res.json());
           setNotFound(false);
