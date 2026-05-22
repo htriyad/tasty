@@ -1,0 +1,28 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render API
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://tasty-api-jwy1.onrender.com/api/healthz)
+          echo "Render /api/healthz → HTTP $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✅ Render is awake"
+          else
+            echo "⚠️ Render returned $STATUS — it may be waking up"
+          fi
+
+      - name: Second ping after wake-up (if needed)
+        run: |
+          sleep 10
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://tasty-api-jwy1.onrender.com/api/healthz)
+          echo "Follow-up ping → HTTP $STATUS"
