@@ -1,10 +1,6 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import dns from "dns";
 import * as schema from "./schema";
-
-// Force IPv4 DNS resolution (Render free tier does not route IPv6)
-dns.setDefaultResultOrder("ipv4first");
 
 const { Pool } = pg;
 
@@ -18,7 +14,7 @@ if (!connectionString) {
 
 export const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: connectionString.includes("supabase") ? { rejectUnauthorized: false } : false,
 });
 export const db = drizzle(pool, { schema });
 
