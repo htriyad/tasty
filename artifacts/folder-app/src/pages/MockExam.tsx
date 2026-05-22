@@ -229,7 +229,7 @@ export function MockExam() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/chorcha/mock-exam/generate`, {
+      const res = await fetch(`${API_BASE}/api/mock-exam/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
