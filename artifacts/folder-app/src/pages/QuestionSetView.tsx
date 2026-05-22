@@ -22,6 +22,8 @@ import {
   readReviewList, saveReviewList, recordWrong, BookmarkItem,
 } from "@/lib/localStore";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 // ─── Theme hook ───────────────────────────────────────────────────────────────
 function useIsLight() {
   const [isLight, setIsLight] = useState(() =>
@@ -193,7 +195,7 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
     setSaving(true);
     try {
       const effectiveType = qType === "mcq" && options.length === 0 ? "sq" : qType;
-      const res = await fetch(`${import.meta.env.BASE_URL}api/questions/${q.id}`, {
+      const res = await fetch(`${API_BASE}/api/questions/${q.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ questionText, type: effectiveType, answer: answer || null, solution: solution || null, aiExplanation: aiExplanation || null, stemImages, options, parts }),
@@ -214,8 +216,8 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
     setDeleting(true);
     try {
       const url = isLinked
-        ? `${import.meta.env.BASE_URL}api/links/${q.linkId}`
-        : `${import.meta.env.BASE_URL}api/questions/${q.id}`;
+        ? `${API_BASE}/api/links/${q.linkId}`
+        : `${API_BASE}/api/questions/${q.id}`;
       const res = await fetch(url, { method: "DELETE" });
       if (!res.ok && res.status !== 204) throw new Error("Failed");
       onDeleted(q.id);
@@ -233,7 +235,7 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
     setHiddenPartsLocal(next);
     setSavingHiddenParts(true);
     try {
-      await fetch(`${import.meta.env.BASE_URL}api/links/${q.linkId}`, {
+      await fetch(`${API_BASE}/api/links/${q.linkId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hiddenParts: next }),
@@ -820,7 +822,7 @@ function AddQuestionDialog({ setId, onAdded, onClose }: { setId: number; onAdded
   const handleAdd = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/sets/${setId}/questions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type }) });
+      const res = await fetch(`${API_BASE}/api/sets/${setId}/questions`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type }) });
       if (!res.ok) throw new Error((await res.json()).error ?? "Failed");
       onAdded(await res.json()); onClose();
     } catch (e) { alert(e instanceof Error ? e.message : "Failed"); } finally { setLoading(false); }
@@ -867,7 +869,7 @@ function CopyToFolderBrowser({ currentSetId, selectedQuestionIds, onClose, onLin
   const currentFolderId = path.length > 0 ? path[path.length - 1].id : null;
 
   useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}api/folders`)
+    fetch(`${API_BASE}/api/folders`)
       .then(r => r.json())
       .then((data: FolderItem[]) => { setAllFolders(data); setLoadingFolders(false); })
       .catch(() => setLoadingFolders(false));
@@ -876,7 +878,7 @@ function CopyToFolderBrowser({ currentSetId, selectedQuestionIds, onClose, onLin
   useEffect(() => {
     if (currentFolderId === null) { setSets([]); return; }
     setLoadingSets(true);
-    fetch(`${import.meta.env.BASE_URL}api/folders/${currentFolderId}/sets`)
+    fetch(`${API_BASE}/api/folders/${currentFolderId}/sets`)
       .then(r => r.json())
       .then((data: SetItem[]) => { setSets(data); setLoadingSets(false); })
       .catch(() => setLoadingSets(false));
@@ -1585,7 +1587,7 @@ export function QuestionSetView() {
     const items = arr.map((q, i) => ({ id: q.id, position: i + 1 }));
     setLocalQuestions(arr);
     try {
-      await fetch(`${import.meta.env.BASE_URL}api/sets/${setId}/questions/reorder`, {
+      await fetch(`${API_BASE}/api/sets/${setId}/questions/reorder`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items }),
       });
       queryClient.invalidateQueries({ queryKey: getGetQuestionSetQueryKey(setId) });
@@ -1601,7 +1603,7 @@ export function QuestionSetView() {
   const saveReorder = async () => {
     setSavingOrder(true);
     try {
-      await fetch(`${import.meta.env.BASE_URL}api/sets/${setId}/questions/reorder`, {
+      await fetch(`${API_BASE}/api/sets/${setId}/questions/reorder`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: reorderOrder.map((q, i) => ({ id: q.id, position: i + 1 })) }),
       });

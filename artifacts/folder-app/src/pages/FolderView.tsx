@@ -30,6 +30,8 @@ import { getIcon } from "@/lib/folderIcons";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 export function FolderView() {
   const params = useParams();
   const folderId = parseInt(params.id ?? "0", 10);
@@ -65,7 +67,7 @@ export function FolderView() {
     if (!name) return;
     setNewSetSaving(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/folders/${folderId}/sets`, {
+      const res = await fetch(`${API_BASE}/api/folders/${folderId}/sets`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, examType: newSetType.trim() || null }),
       });
@@ -123,7 +125,7 @@ export function FolderView() {
   const saveSetOrder = async () => {
     setSavingSetsOrder(true);
     try {
-      await fetch(`${import.meta.env.BASE_URL}api/folders/${folderId}/sets/reorder`, {
+      await fetch(`${API_BASE}/api/folders/${folderId}/sets/reorder`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: localSetOrder.map((s, i) => ({ id: s.id, position: i + 1 })) }),
       });

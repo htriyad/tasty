@@ -55,7 +55,11 @@ async function deleteDescendants(id: number): Promise<void> {
 }
 
 router.get("/folders", async (req, res): Promise<void> => {
-  const parsed = ListFoldersQueryParams.safeParse(req.query);
+  const rawQuery = { ...req.query };
+  if (rawQuery.parentId === "null" || rawQuery.parentId === "") {
+    delete rawQuery.parentId;
+  }
+  const parsed = ListFoldersQueryParams.safeParse(rawQuery);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;

@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { getIcon } from "@/lib/folderIcons";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface DbQuestion {
   id: number;
@@ -227,7 +229,7 @@ export function MockExam() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/chorcha/mock-exam/generate`, {
+      const res = await fetch(`${API_BASE}/api/chorcha/mock-exam/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

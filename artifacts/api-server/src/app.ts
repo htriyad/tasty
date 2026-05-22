@@ -31,14 +31,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
-  logger.error({ err, url: req.url }, "Unhandled route error");
-  if (res.headersSent) return;
-  const status = (err as { status?: number; statusCode?: number })?.status
-    ?? (err as { status?: number; statusCode?: number })?.statusCode
-    ?? 500;
-  const message = err instanceof Error ? err.message : "Internal server error";
-  res.status(status).json({ error: message });
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  const isDev = process.env.NODE_ENV !== "production";
+  res.status(500).json({ error: isDev ? err.message : "Internal server error" });
 });
 
 export default app;

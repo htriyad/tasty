@@ -7,6 +7,8 @@ import { MathText } from "@/components/folder/MathText";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBattle, type BattleScope } from "@/hooks/useBattle";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface FolderItem { id: number; name: string; parentId: number | null; }
 interface SetItem { id: number; name: string; examType: string | null; totalQuestions: number; }
@@ -44,7 +46,7 @@ function TimerBar({ timeLimit, startTime, active }: { timeLimit: number; startTi
 
 // ── Scope selector ─────────────────────────────────────────────────────────────
 function ScopeSelector({ scope, onChange }: { scope: BattleScope; onChange: (s: BattleScope) => void }) {
-  const base = import.meta.env.BASE_URL;
+  const base = API_BASE + "/";
   const [rootFolders, setRootFolders] = useState<FolderItem[]>([]);   // HSC, Engineering
   const [subjectFolders, setSubjectFolders] = useState<FolderItem[]>([]); // Physics, Chemistry…
   const [paperFolders, setPaperFolders] = useState<FolderItem[]>([]);  // 1st paper, 2nd paper…
@@ -59,7 +61,7 @@ function ScopeSelector({ scope, onChange }: { scope: BattleScope; onChange: (s: 
 
   // Load top-level folders (HSC, Engineering…)
   useEffect(() => {
-    fetch(`${base}api/folders`)
+    fetch(`${API_BASE}/api/folders`)
       .then(r => r.json())
       .then((d: FolderItem[]) => setRootFolders(Array.isArray(d) ? d.filter(f => !f.parentId) : []))
       .catch(() => {});
@@ -69,7 +71,7 @@ function ScopeSelector({ scope, onChange }: { scope: BattleScope; onChange: (s: 
   useEffect(() => {
     if (!groupId) { setSubjectFolders([]); return; }
     setLoadingSubjects(true);
-    fetch(`${base}api/folders?parentId=${groupId}`)
+    fetch(`${API_BASE}/api/folders?parentId=${groupId}`)
       .then(r => r.json())
       .then((d: FolderItem[]) => setSubjectFolders(Array.isArray(d) ? d : []))
       .catch(() => setSubjectFolders([]))
@@ -80,7 +82,7 @@ function ScopeSelector({ scope, onChange }: { scope: BattleScope; onChange: (s: 
   useEffect(() => {
     if (!subjectId) { setPaperFolders([]); return; }
     setLoadingPapers(true);
-    fetch(`${base}api/folders?parentId=${subjectId}`)
+    fetch(`${API_BASE}/api/folders?parentId=${subjectId}`)
       .then(r => r.json())
       .then((d: FolderItem[]) => setPaperFolders(Array.isArray(d) ? d : []))
       .catch(() => setPaperFolders([]))
