@@ -1,6 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import dns from "dns";
 import * as schema from "./schema";
+
+// Force IPv4 DNS resolution (Render free tier does not route IPv6)
+dns.setDefaultResultOrder("ipv4first");
 
 const { Pool } = pg;
 
