@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,47 +20,82 @@ import { AdminLogin } from "@/pages/AdminLogin";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeProvider } from "@/lib/theme";
 import { AdminProvider } from "@/contexts/AdminContext";
-import {
-  BackNavigationProvider,
-  useBackNavigation,
-} from "@/contexts/BackNavigationContext";
+import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// ─── Single-URL router ────────────────────────────────────────────────────────
+// ─── Single-URL router with coordinated back-button support ──────────────────
 //
 // URL bar is always locked to "/".
 //
-// Every call to navigate() registers a back handler via BackNavigationProvider
-// (the system the app already owns).  When the user presses the phone back
-// button, Android hardware key, or iOS swipe, BackNavigationProvider fires the
-// most-recently-registered handler, which calls setPath(previousPage).
+// This router and BackNavigationProvider both listen to popstate. They
+// coordinate via a marker in the history state:
+//   { _router: true, idx, path }  → owned by this router
+//   { __spa_back__: true, depth } → owned by BackNavigationProvider
 //
-// This means back navigation works identically to how the rest of the app
-// handles it (modals, reorder-mode, etc.) — all through the same popstate
-// pipeline — with no conflicts.
+// Each system only handles entries it owns — no conflicts.
+//
+// Sentinel at idx:-1 means "before the app" — pressing back from the first
+// page bounces forward so the tab never closes unexpectedly.
+
+const ROUTER_MARKER = "_router" as const;
+type RouterState = { _router: true; idx: number; path: string };
+
+function isRouterState(s: unknown): s is RouterState {
+  return typeof s === "object" && s !== null && (s as RouterState)._router === true;
+}
 
 function useSingleUrlRouter(): [string, (to: string, ...args: unknown[]) => void] {
   const [path, setPath] = useState<string>("/");
-  const { pushBackHandler } = useBackNavigation();
-  const currentPathRef = useRef<string>("/");
+  const idxRef  = useRef<number>(0);
+  const lockRef = useRef<boolean>(false);
 
-  const navigate = useCallback(
-    (to: string) => {
-      const from = currentPathRef.current;
-      currentPathRef.current = to;
-      setPath(to);
+  useEffect(() => {
+    // Seed browser history:
+    //   slot -1: sentinel (before the app begins, _router owned)
+    //   slot  0: home
+    window.history.replaceState(
+      { [ROUTER_MARKER]: true, idx: -1, path: "/" } satisfies RouterState,
+      "",
+    );
+    window.history.pushState(
+      { [ROUTER_MARKER]: true, idx: 0, path: "/" } satisfies RouterState,
+      "",
+    );
 
-      // Register a back handler so pressing back navigates to the previous page.
-      // BackNavigationProvider handles popstate — no separate listener needed.
-      pushBackHandler(() => {
-        currentPathRef.current = from;
-        setPath(from);
-        return true; // intercept: stay in app, re-push guard automatically
-      });
-    },
-    [pushBackHandler],
-  );
+    const onPopState = (e: PopStateEvent) => {
+      // Only handle entries we own
+      if (!isRouterState(e.state)) return;
+      if (lockRef.current) return;
+
+      const { idx, path: target } = e.state;
+
+      if (idx < 0) {
+        // Sentinel — user pressed Back from the very first page.
+        // Bounce forward so the tab stays open.
+        lockRef.current = true;
+        window.history.go(1);
+        setTimeout(() => { lockRef.current = false; }, 150);
+        return;
+      }
+
+      idxRef.current = idx;
+      setPath(target);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const navigate = useCallback((to: string) => {
+    if (lockRef.current) return;
+    idxRef.current += 1;
+    window.history.pushState(
+      { [ROUTER_MARKER]: true, idx: idxRef.current, path: to } satisfies RouterState,
+      "",
+    );
+    setPath(to);
+  }, []);
 
   return [path, navigate];
 }
