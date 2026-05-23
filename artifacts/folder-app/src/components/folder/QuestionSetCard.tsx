@@ -5,6 +5,7 @@ import { Trash2, Pencil, Check, X, ArrowUp, ArrowDown, Loader2, ChevronRight, Mo
 import { QuestionSet, useDeleteQuestionSet, getListQuestionSetsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAdmin } from "@/contexts/AdminContext";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
@@ -32,6 +33,7 @@ export function QuestionSetCard({
   set, index, folderId, reorderMode = false,
   onMoveUp, onMoveDown, isFirst, isLast, onRenamed,
 }: QuestionSetCardProps) {
+  const { isAdmin } = useAdmin();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const deleteSet = useDeleteQuestionSet();
@@ -126,8 +128,8 @@ export function QuestionSetCard({
         <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
       )}
 
-      {/* ⋮ Menu button — always visible on touch devices */}
-      {!reorderMode && !renaming && (
+      {/* ⋮ Menu button — admin only */}
+      {!reorderMode && !renaming && isAdmin && (
         <div ref={menuRef} className="relative shrink-0" onClick={e => e.stopPropagation()}>
           <button
             onClick={e => { e.preventDefault(); setMenuOpen(v => !v); setConfirmDelete(false); }}

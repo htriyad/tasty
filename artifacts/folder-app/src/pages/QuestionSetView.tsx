@@ -16,6 +16,8 @@ import {
   Link2, Copy, Square, CheckSquare, Search, FolderOpen, Bookmark, Flag,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAdmin } from "@/contexts/AdminContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { useLinkQuestions } from "@workspace/api-client-react";
 import {
   readBookmarks, saveBookmarks, readReviewIds, saveReviewIds,
@@ -140,6 +142,7 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
   examSelected, examSubmitted, onExamSelect, cardRef, onImageZoom,
   selectMode, selected, onToggleSelect, isHighlighted, isLight = false,
   isBookmarked = false, isReviewed = false, onBookmark, onReview }: QCardProps) {
+  const { isAdmin } = useAdmin();
   const { toast } = useToast();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -602,8 +605,8 @@ function QuestionCard({ q, serialNum, totalCount, onUpdated, onDeleted, onReorde
             style={idCopied ? { opacity: 1, color: "#22c55e" } : { opacity: 0.35, color: "rgba(255,255,255,0.5)" }}>
             {idCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
-          {/* Edit button — solution mode only, not for linked questions */}
-          {mode === "solution" && !isLinked && (
+          {/* Edit button — solution mode only, not for linked questions, admin only */}
+          {mode === "solution" && !isLinked && isAdmin && (
             <button onClick={() => setEditing(true)} className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center opacity-40 hover:opacity-100 transition-opacity hover:bg-white/8 text-white/30 hover:text-white/70">
               <Pencil className="w-3.5 h-3.5" />
             </button>
@@ -1020,9 +1023,9 @@ interface ModeSelectorProps {
   questionCount: number;
   breadcrumbs: Array<{ id: number; name: string }>;
   onSelectMode: (m: "solution" | "practice" | "exam") => void;
-  onReorder: () => void;
-  onAddQuestion: () => void;
-  onCopy: () => void;
+  onReorder?: () => void;
+  onAddQuestion?: () => void;
+  onCopy?: () => void;
 }
 function ModeSelector({ set, questionCount, breadcrumbs, onSelectMode, onReorder, onAddQuestion, onCopy }: ModeSelectorProps) {
   const modes = [
@@ -1063,31 +1066,37 @@ function ModeSelector({ set, questionCount, breadcrumbs, onSelectMode, onReorder
           {/* Management */}
           <div className="flex items-center gap-2 flex-shrink-0">
             <ThemeToggle size="sm" />
-            <button onClick={onAddQuestion} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/40 hover:text-white/70 bg-white/4 hover:bg-white/8 border border-white/8 transition-all">
-              <Plus className="w-3.5 h-3.5" /> Add
-            </button>
-            <button onClick={onReorder} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/40 hover:text-white/70 bg-white/4 hover:bg-white/8 border border-white/8 transition-all">
-              <GripVertical className="w-3.5 h-3.5" /> Reorder
-            </button>
+            {onAddQuestion && (
+              <button onClick={onAddQuestion} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/40 hover:text-white/70 bg-white/4 hover:bg-white/8 border border-white/8 transition-all">
+                <Plus className="w-3.5 h-3.5" /> Add
+              </button>
+            )}
+            {onReorder && (
+              <button onClick={onReorder} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-white/40 hover:text-white/70 bg-white/4 hover:bg-white/8 border border-white/8 transition-all">
+                <GripVertical className="w-3.5 h-3.5" /> Reorder
+              </button>
+            )}
           </div>
         </div>
       </motion.header>
 
-      {/* Copy to Set — prominent action */}
-      <motion.button
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
-        onClick={onCopy}
-        className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-indigo-500/35 transition-all active:scale-[0.98] hover:border-indigo-500/60 group"
-        style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08))" }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-indigo-500/20">
-          <Link2 className="w-5 h-5 text-indigo-400" />
-        </div>
-        <div className="flex-1 text-left">
-          <div className="font-bold text-white/90 text-sm">Copy to Another Set</div>
-          <div className="text-xs text-white/40 mt-0.5">Select questions and link them to any set</div>
-        </div>
-        <ChevronRight className="w-5 h-5 text-indigo-400/50 flex-shrink-0 group-hover:text-indigo-400 transition-colors" />
-      </motion.button>
+      {/* Copy to Set — admin only */}
+      {onCopy && (
+        <motion.button
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
+          onClick={onCopy}
+          className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border border-indigo-500/35 transition-all active:scale-[0.98] hover:border-indigo-500/60 group"
+          style={{ background: "linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.08))" }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-indigo-500/20">
+            <Link2 className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div className="flex-1 text-left">
+            <div className="font-bold text-white/90 text-sm">Copy to Another Set</div>
+            <div className="text-xs text-white/40 mt-0.5">Select questions and link them to any set</div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-indigo-400/50 flex-shrink-0 group-hover:text-indigo-400 transition-colors" />
+        </motion.button>
+      )}
 
       {/* Mode cards */}
       <div className="space-y-3">
@@ -1440,6 +1449,7 @@ function useExamTimer(durationSecs: number | null, onExpire: () => void) {
 
 // ─── Main QuestionSetView ──────────────────────────────────────────────────────
 export function QuestionSetView() {
+  const { isAdmin } = useAdmin();
   const params = useParams();
   const setId = parseInt(params.id ?? "0", 10);
   const queryClient = useQueryClient();
@@ -1526,6 +1536,29 @@ export function QuestionSetView() {
   const [showExamGrid, setShowExamGrid] = useState(false);
   const [examCurrentIdx, setExamCurrentIdx] = useState(0);
   const [examAutoScroll, setExamAutoScroll] = useState(true);
+
+  // ── Back-button handling ──────────────────────────────────────────────────
+  // Handlers are stacked: the LAST registered active handler fires first.
+  // Order here: outermost first → innermost last → innermost fires first on back.
+
+  // 1. Outermost: any active mode → back to mode selector
+  useBackHandler(() => {
+    setMode(null);
+    setSelectMode(false);
+    setShowResults(false);
+    setShowExamGrid(false);
+    return true;
+  }, mode !== null);
+
+  // 2. Select mode (solution) → exit select mode
+  useBackHandler(() => { setSelectMode(false); setSelectedIds(new Set()); return true; }, selectMode && mode === "solution");
+
+  // 3. Practice results overlay → close it
+  useBackHandler(() => { setShowResults(false); return true; }, showResults);
+
+  // 4. Exam grid overlay → close it
+  useBackHandler(() => { setShowExamGrid(false); return true; }, showExamGrid);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   // Pending scroll: set inside a setState updater, consumed by useEffect after commit
@@ -1774,9 +1807,9 @@ export function QuestionSetView() {
             setExamStarted(false);
             setSelectedDuration(null);
           }}
-          onReorder={enterReorder}
-          onAddQuestion={() => setAddOpen(true)}
-          onCopy={() => { setSelectedIds(new Set()); setMode("copy"); }} />
+          onReorder={isAdmin ? enterReorder : undefined}
+          onAddQuestion={isAdmin ? () => setAddOpen(true) : undefined}
+          onCopy={isAdmin ? () => { setSelectedIds(new Set()); setMode("copy"); } : undefined} />
         {addOpen && <AddQuestionDialog setId={setId} onAdded={handleAdded} onClose={() => setAddOpen(false)} />}
       </>
     );
@@ -2254,8 +2287,8 @@ export function QuestionSetView() {
         </button>
       )}
 
-      {/* Add question button (solution mode, not in select mode) */}
-      {isSolution && !selectMode && (
+      {/* Add question button (solution mode, not in select mode) — admin only */}
+      {isSolution && !selectMode && isAdmin && (
         <div className="fixed bottom-6 right-4 z-30 flex flex-col gap-2">
           <button onClick={() => setAddOpen(true)}
             className="w-12 h-12 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95"
@@ -2264,8 +2297,8 @@ export function QuestionSetView() {
           </button>
         </div>
       )}
-      {/* Copy button — shows when questions are selected */}
-      {isSolution && selectMode && selectedIds.size > 0 && (
+      {/* Copy button — shows when questions are selected — admin only */}
+      {isSolution && selectMode && selectedIds.size > 0 && isAdmin && (
         <button onClick={() => setCopyDialogOpen(true)}
           className="fixed bottom-6 right-4 z-30 flex items-center gap-2 px-5 py-3.5 rounded-full shadow-2xl font-bold text-sm transition-all hover:scale-105 active:scale-95"
           style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)", boxShadow: "0 8px 32px rgba(99,102,241,0.45)" }}>

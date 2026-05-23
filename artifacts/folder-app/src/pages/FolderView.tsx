@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAdmin } from "@/contexts/AdminContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
 import { useParams, Link, useLocation } from "wouter";
 import {
   useListFolders,
@@ -33,7 +35,9 @@ import { useToast } from "@/hooks/use-toast";
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/+$/, "");
 
 export function FolderView() {
+  const { isAdmin } = useAdmin();
   const params = useParams();
+  // Back button during reorder → cancel reorder instead of leaving page
   const folderId = parseInt(params.id ?? "0", 10);
 
   const { data: folder, isLoading: folderLoading } = useGetFolder(folderId);
@@ -61,6 +65,15 @@ export function FolderView() {
   const reorderFolders = useReorderFolders();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // ── Back-button handling ──────────────────────────────────────────────────
+  // Back during any reorder mode → cancel reorder, stay on page.
+  // Must be declared before any conditional returns (Rules of Hooks).
+  useBackHandler(
+    () => { setFolderReorderMode(false); setSetReorderMode(false); return true; },
+    folderReorderMode || setReorderMode,
+  );
+  // ─────────────────────────────────────────────────────────────────────────
 
   const createNewSet = async () => {
     const name = newSetName.trim();
@@ -178,7 +191,7 @@ export function FolderView() {
             </p>
           </div>
 
-          {anyReorderMode ? (
+          {isAdmin && anyReorderMode ? (
             <div className="flex items-center gap-2 shrink-0">
               <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => { setFolderReorderMode(false); setSetReorderMode(false); }}>Cancel</Button>
               {folderReorderMode && (
@@ -192,7 +205,7 @@ export function FolderView() {
                 </Button>
               )}
             </div>
-          ) : (
+          ) : isAdmin ? (
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 size="sm" variant="ghost"
@@ -225,7 +238,7 @@ export function FolderView() {
                 <Plus className="w-3.5 h-3.5" />
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Subfolders */}
@@ -233,7 +246,7 @@ export function FolderView() {
           <section className="space-y-2.5">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Submodules</p>
-              {!anyReorderMode && subfolders.length > 1 && (
+              {!anyReorderMode && subfolders.length > 1 && isAdmin && (
                 <button onClick={enterFolderReorder} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
                   <GripVertical className="w-3.5 h-3.5" /> Reorder
                 </button>
@@ -263,11 +276,11 @@ export function FolderView() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Question Sets</p>
               <div className="flex items-center gap-3">
                 {!anyReorderMode && questionSets.length > 1 && (
-                  <button onClick={enterSetReorder} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                  isAdmin && <button onClick={enterSetReorder} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
                     <GripVertical className="w-3.5 h-3.5" /> Reorder
                   </button>
                 )}
-                {!anyReorderMode && (
+                {!anyReorderMode && isAdmin && (
                   <button onClick={() => setNewSetOpen(true)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
                     <Plus className="w-3.5 h-3.5" /> New set
                   </button>

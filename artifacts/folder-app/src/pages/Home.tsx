@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   useListFolders,
   useGetFolderStats,
@@ -18,8 +18,13 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { AnimatePresence, motion } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
+import { useAdmin } from "@/contexts/AdminContext";
+import { useBackHandler } from "@/hooks/useBackHandler";
+import { useToast } from "@/hooks/use-toast";
 
 export function Home() {
+  const { isAdmin } = useAdmin();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [editFolder, setEditFolder] = useState<Folder | null>(null);
@@ -35,6 +40,24 @@ export function Home() {
   const queryClient = useQueryClient();
 
   const displayFolders = reorderMode ? localOrder : folders;
+
+  // ── Back-button handling ──────────────────────────────────────────────────
+  const exitPending = useRef(false);
+  // Guard: pressing back on home shows a toast; pressing again exits.
+  useBackHandler(() => {
+    if (exitPending.current) {
+      exitPending.current = false;
+      return false; // pass-through → browser navigates away
+    }
+    exitPending.current = true;
+    toast({ description: "Press back again to exit" });
+    setTimeout(() => { exitPending.current = false; }, 2500);
+    return true; // intercept
+  }, !reorderMode); // hand-off to the reorder handler when reordering
+
+  // While reordering, back = cancel reorder
+  useBackHandler(() => { setReorderMode(false); return true; }, reorderMode);
+  // ─────────────────────────────────────────────────────────────────────────
 
   const enterReorderMode = () => { setLocalOrder([...folders]); setReorderMode(true); };
   const moveFolder = (idx: number, dir: "up" | "down") => {
@@ -66,14 +89,14 @@ export function Home() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            {reorderMode ? (
+            {isAdmin && reorderMode ? (
               <>
                 <Button size="sm" variant="ghost" onClick={() => setReorderMode(false)} className="h-8 text-xs">Cancel</Button>
                 <Button size="sm" onClick={saveOrder} disabled={reorderFolders.isPending} className="h-8 text-xs gap-1.5">
                   <Check className="w-3.5 h-3.5" /> Save
                 </Button>
               </>
-            ) : (
+            ) : isAdmin ? (
               <>
                 {folders.length > 1 && (
                   <Button size="sm" variant="ghost" onClick={enterReorderMode} className="h-8 px-2.5 text-xs gap-1.5 text-muted-foreground">
@@ -84,7 +107,7 @@ export function Home() {
                   <Plus className="w-3.5 h-3.5" /> New
                 </Button>
               </>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -135,7 +158,7 @@ export function Home() {
         ) : displayFolders.length === 0 ? (
           <div className="py-16 text-center text-muted-foreground">
             <p className="text-sm">{search ? "No modules match your search." : "No modules yet."}</p>
-            {!search && (
+            {!search && isAdmin && (
               <Button size="sm" onClick={() => setCreateOpen(true)} className="mt-4 gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Create first module
               </Button>

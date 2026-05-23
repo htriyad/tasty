@@ -5,6 +5,7 @@ import { Pencil, Trash2, ArrowUp, ArrowDown, Move, MoreVertical } from "lucide-r
 import { getIcon } from "@/lib/folderIcons";
 import { cn } from "@/lib/utils";
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useAdmin } from "@/contexts/AdminContext";
 
 const LONG_PRESS_MS = 600;
 
@@ -25,6 +26,7 @@ export function FolderCard({
   folder, index, onEdit, onDelete, onMove,
   reorderMode = false, onMoveUp, onMoveDown, isFirst, isLast,
 }: FolderCardProps) {
+  const { isAdmin } = useAdmin();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suppressNextClick = useRef(false);
   const [pressing, setPressing] = useState(false);
@@ -93,7 +95,7 @@ export function FolderCard({
           <IconComponent className="w-4 h-4" strokeWidth={2} />
         </div>
 
-        {!reorderMode && (
+        {!reorderMode && isAdmin && (
           <div ref={menuRef} className="relative z-20" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
             <button
               onClick={() => setMenuOpen(v => !v)}

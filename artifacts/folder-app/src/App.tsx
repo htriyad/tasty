@@ -15,8 +15,11 @@ import Folders from "@/pages/Folders";
 import FolderDetail from "@/pages/FolderDetail";
 import SetDetail from "@/pages/SetDetail";
 import ImportPage from "@/pages/ImportPage";
+import { AdminLogin } from "@/pages/AdminLogin";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeProvider } from "@/lib/theme";
+import { AdminProvider } from "@/contexts/AdminContext";
+import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
@@ -34,6 +37,7 @@ function Router() {
     <Switch>
       {/* Full-page views (own layout) */}
       <Route path="/" component={Home} />
+      <Route path="/admin" component={AdminLogin} />
       <Route path="/battle" component={Battle} />
       <Route path="/mock-exam" component={MockExam} />
       <Route path="/bookmarks" component={Bookmarks} />
@@ -67,14 +71,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-              <Router />
-            </div>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
+        <AdminProvider>
+          <BackNavigationProvider>
+            <TooltipProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+                  <Router />
+                </div>
+              </WouterRouter>
+              <Toaster />
+            </TooltipProvider>
+          </BackNavigationProvider>
+        </AdminProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
