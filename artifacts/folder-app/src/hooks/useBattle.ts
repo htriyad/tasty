@@ -327,7 +327,7 @@ export function useBattle() {
     try {
       const { io } = await import("socket.io-client");
       if (!socketRef.current) {
-        const socket = io({ path: "/api/socket.io", withCredentials: true, transports: ["polling", "websocket"] });
+        const socket = io(API_BASE, { path: "/api/socket.io", withCredentials: true, transports: ["polling", "websocket"] });
         socketRef.current = socket;
 
         socket.on("queue_joined", () => update({ phase: "searching", error: null }));
