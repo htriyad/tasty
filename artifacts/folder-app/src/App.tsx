@@ -25,41 +25,55 @@ import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// ─── Single-URL + working back button ────────────────────────────────────────
-// URL bar is always locked to "/".
-// Every internal navigation pushes a browser history entry (same URL) so the
-// phone/browser back button fires popstate — we catch it and go back internally.
-// A sentinel entry at idx:-1 ensures pressing Back from the very first page
-// bounces the browser forward instead of closing the tab.
+// ─── Dynamic single-URL router with full back-button support ─────────────────
+//
+// How it works:
+//   • URL bar is ALWAYS locked to "/" — never changes.
+//   • Every internal navigate() pushes a real browser history entry (same URL,
+//     different state) so the phone back button, Android hardware key, iOS
+//     swipe gesture, and desktop Alt+← all fire popstate correctly.
+//   • The target path is stored INSIDE the browser state object — not just a
+//     JS array. This means it survives tab suspension on mobile (OS kills the
+//     tab in background, user reopens it and presses back — still works).
+//   • A sentinel entry at idx:-1 sits before the first page. If the user
+//     presses Back from the very first page, we detect idx<0 and call
+//     history.go(+1) to bounce back in — the tab never closes unexpectedly.
+//   • A lock flag prevents re-entrant navigation from rapid back-taps.
 
 const { hook: rawUseMemoryLocation } = memoryLocation({ path: "/" });
 
-// Seed browser history once on load:
-//   slot -1 (sentinel)  →  slot 0 (home)
-// Must run before React renders so the slots are in place.
-window.history.replaceState({ idx: -1 }, "");
-window.history.pushState({ idx: 0 }, "");
+// Seed browser history on first load:
+//   [idx:-1, sentinel] → [idx:0, home="/"]
+// replaceState overwrites the initial blank entry; pushState adds home on top.
+window.history.replaceState({ idx: -1, path: "/" }, "");
+window.history.pushState({ idx: 0, path: "/" }, "");
+
+type HistoryState = { idx: number; path: string };
 
 function useBackableMemoryLocation(): [string, (to: string) => void] {
   const [path, memNavigate] = rawUseMemoryLocation();
-
-  // Internal path stack — mirrors what would have been the URL history
-  const stackRef = useRef<string[]>(["/"]);
   const idxRef  = useRef<number>(0);
+  const lockRef = useRef<boolean>(false); // blocks re-entrant popstate handling
 
   useEffect(() => {
     const onPopState = (e: PopStateEvent) => {
-      const targetIdx: number =
-        typeof e.state?.idx === "number" ? e.state.idx : -1;
+      if (lockRef.current) return;
 
+      const state = (e.state ?? {}) as Partial<HistoryState>;
+      const targetIdx  = typeof state.idx  === "number" ? state.idx  : -1;
+      const targetPath = typeof state.path === "string"  ? state.path : "/";
+
+      // Hit the sentinel — user pressed Back from the very first page.
+      // Bounce forward so the tab stays open.
       if (targetIdx < 0) {
-        // Pressed Back past the sentinel — bounce forward, stay in app
+        lockRef.current = true;
         window.history.go(1);
+        // Release lock after the go(1) history event settles
+        setTimeout(() => { lockRef.current = false; }, 100);
         return;
       }
 
       idxRef.current = targetIdx;
-      const targetPath = stackRef.current[targetIdx] ?? "/";
       memNavigate(targetPath);
     };
 
@@ -69,15 +83,10 @@ function useBackableMemoryLocation(): [string, (to: string) => void] {
 
   const navigate = useCallback(
     (to: string) => {
-      // Advance index, discard any forward history
+      if (lockRef.current) return;
       idxRef.current += 1;
-      stackRef.current = stackRef.current.slice(0, idxRef.current);
-      stackRef.current.push(to);
-
-      // Push a browser history entry at the same URL so back button has
-      // something to pop — works on both desktop and mobile (Android/iOS)
-      window.history.pushState({ idx: idxRef.current }, "");
-
+      // Push with the target path embedded in state — survives mobile tab suspend
+      window.history.pushState({ idx: idxRef.current, path: to } satisfies HistoryState, "");
       memNavigate(to);
     },
     [memNavigate]
