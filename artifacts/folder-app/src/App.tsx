@@ -1,4 +1,3 @@
-import { useState, useEffect, useCallback, useRef } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -24,83 +23,6 @@ import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// ─── Single-URL router with coordinated back-button support ──────────────────
-//
-// URL bar is always locked to "/".
-//
-// This router and BackNavigationProvider both listen to popstate. They
-// coordinate via a marker in the history state:
-//   { _router: true, idx, path }  → owned by this router
-//   { __spa_back__: true, depth } → owned by BackNavigationProvider
-//
-// Each system only handles entries it owns — no conflicts.
-//
-// Sentinel at idx:-1 means "before the app" — pressing back from the first
-// page bounces forward so the tab never closes unexpectedly.
-
-const ROUTER_MARKER = "_router" as const;
-type RouterState = { _router: true; idx: number; path: string };
-
-function isRouterState(s: unknown): s is RouterState {
-  return typeof s === "object" && s !== null && (s as RouterState)._router === true;
-}
-
-function useSingleUrlRouter(): [string, (to: string, ...args: unknown[]) => void] {
-  const [path, setPath] = useState<string>("/");
-  const idxRef  = useRef<number>(0);
-  const lockRef = useRef<boolean>(false);
-
-  useEffect(() => {
-    // Seed browser history:
-    //   slot -1: sentinel (before the app begins, _router owned)
-    //   slot  0: home
-    window.history.replaceState(
-      { [ROUTER_MARKER]: true, idx: -1, path: "/" } satisfies RouterState,
-      "",
-    );
-    window.history.pushState(
-      { [ROUTER_MARKER]: true, idx: 0, path: "/" } satisfies RouterState,
-      "",
-    );
-
-    const onPopState = (e: PopStateEvent) => {
-      // Only handle entries we own
-      if (!isRouterState(e.state)) return;
-      if (lockRef.current) return;
-
-      const { idx, path: target } = e.state;
-
-      if (idx < 0) {
-        // Sentinel — user pressed Back from the very first page.
-        // Bounce forward so the tab stays open.
-        lockRef.current = true;
-        window.history.go(1);
-        setTimeout(() => { lockRef.current = false; }, 150);
-        return;
-      }
-
-      idxRef.current = idx;
-      setPath(target);
-    };
-
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  const navigate = useCallback((to: string) => {
-    if (lockRef.current) return;
-    idxRef.current += 1;
-    window.history.pushState(
-      { [ROUTER_MARKER]: true, idx: idxRef.current, path: to } satisfies RouterState,
-      "",
-    );
-    setPath(to);
-  }, []);
-
-  return [path, navigate];
-}
-// ─────────────────────────────────────────────────────────────────────────────
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -113,7 +35,6 @@ const queryClient = new QueryClient({
 function Router() {
   return (
     <Switch>
-      {/* Full-page views (own layout) */}
       <Route path="/" component={Home} />
       <Route path="/admin" component={AdminLogin} />
       <Route path="/battle" component={Battle} />
@@ -123,7 +44,6 @@ function Router() {
       <Route path="/folders/:id" component={FolderView} />
       <Route path="/sets/:id" component={QuestionSetView} />
 
-      {/* Management views (sidebar layout) */}
       <Route path="/dashboard">
         <AppLayout><Dashboard /></AppLayout>
       </Route>
@@ -152,7 +72,7 @@ function App() {
         <AdminProvider>
           <BackNavigationProvider>
             <TooltipProvider>
-              <WouterRouter hook={useSingleUrlRouter}>
+              <WouterRouter>
                 <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
                   <Router />
                 </div>
