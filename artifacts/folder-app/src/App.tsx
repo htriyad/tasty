@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -20,70 +20,47 @@ import { AdminLogin } from "@/pages/AdminLogin";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ThemeProvider } from "@/lib/theme";
 import { AdminProvider } from "@/contexts/AdminContext";
-import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
+import {
+  BackNavigationProvider,
+  useBackNavigation,
+} from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// ─── Single-URL router with working back button ───────────────────────────────
+// ─── Single-URL router ────────────────────────────────────────────────────────
 //
-// Fully self-contained — no wouter memory-location internals involved.
+// URL bar is always locked to "/".
 //
-// • URL bar is always locked to "/".
-// • Every navigate() pushes a real browser history entry (same URL, different
-//   state) so the phone back button, Android hardware key, iOS swipe, and
-//   desktop ← button all fire popstate which we catch and handle.
-// • The target path is stored IN the browser state object so it survives
-//   mobile OS tab suspension (Android/iOS kill backgrounded tabs).
-// • A sentinel entry at idx:-1 guards the bottom of the stack — if the user
-//   presses Back from the very first page we bounce them forward instead of
-//   closing the tab.
-// • A lock flag prevents re-entrant handling from rapid back taps.
-
-type NavState = { idx: number; path: string };
+// Every call to navigate() registers a back handler via BackNavigationProvider
+// (the system the app already owns).  When the user presses the phone back
+// button, Android hardware key, or iOS swipe, BackNavigationProvider fires the
+// most-recently-registered handler, which calls setPath(previousPage).
+//
+// This means back navigation works identically to how the rest of the app
+// handles it (modals, reorder-mode, etc.) — all through the same popstate
+// pipeline — with no conflicts.
 
 function useSingleUrlRouter(): [string, (to: string, ...args: unknown[]) => void] {
   const [path, setPath] = useState<string>("/");
-  const idxRef  = useRef<number>(0);
-  const lockRef = useRef<boolean>(false);
+  const { pushBackHandler } = useBackNavigation();
+  const currentPathRef = useRef<string>("/");
 
-  useEffect(() => {
-    // Slot -1: sentinel (before the app begins)
-    // Slot  0: home
-    window.history.replaceState({ idx: -1, path: "/" } satisfies NavState, "");
-    window.history.pushState({ idx:  0, path: "/" } satisfies NavState, "");
+  const navigate = useCallback(
+    (to: string) => {
+      const from = currentPathRef.current;
+      currentPathRef.current = to;
+      setPath(to);
 
-    const onPopState = (e: PopStateEvent) => {
-      if (lockRef.current) return;
-
-      const state  = (e.state ?? {}) as Partial<NavState>;
-      const idx    = typeof state.idx  === "number" ? state.idx  : -1;
-      const target = typeof state.path === "string"  ? state.path : "/";
-
-      // Sentinel hit — user pressed Back from the first page.
-      // Bounce forward so the tab stays open.
-      if (idx < 0) {
-        lockRef.current = true;
-        window.history.go(1);
-        setTimeout(() => { lockRef.current = false; }, 150);
-        return;
-      }
-
-      idxRef.current = idx;
-      setPath(target);
-    };
-
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
-
-  const navigate = useCallback((to: string) => {
-    if (lockRef.current) return;
-    idxRef.current += 1;
-    // Push a real browser entry at the same URL — gives back button something to pop.
-    // Path is embedded in state so it works even after mobile OS tab suspend.
-    window.history.pushState({ idx: idxRef.current, path: to } satisfies NavState, "");
-    setPath(to);
-  }, []);
+      // Register a back handler so pressing back navigates to the previous page.
+      // BackNavigationProvider handles popstate — no separate listener needed.
+      pushBackHandler(() => {
+        currentPathRef.current = from;
+        setPath(from);
+        return true; // intercept: stay in app, re-push guard automatically
+      });
+    },
+    [pushBackHandler],
+  );
 
   return [path, navigate];
 }
