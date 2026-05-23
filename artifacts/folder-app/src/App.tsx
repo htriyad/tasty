@@ -1,3 +1,4 @@
+import { useEffect, useCallback, useRef } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { memoryLocation } from "wouter/memory-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -24,8 +25,67 @@ import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// URL bar always stays at https://tasty-dy1.pages.dev/ — navigation is internal
-const { hook: useMemoryLocation } = memoryLocation({ path: "/" });
+// ─── Single-URL + working back button ────────────────────────────────────────
+// URL bar is always locked to "/".
+// Every internal navigation pushes a browser history entry (same URL) so the
+// phone/browser back button fires popstate — we catch it and go back internally.
+// A sentinel entry at idx:-1 ensures pressing Back from the very first page
+// bounces the browser forward instead of closing the tab.
+
+const { hook: rawUseMemoryLocation } = memoryLocation({ path: "/" });
+
+// Seed browser history once on load:
+//   slot -1 (sentinel)  →  slot 0 (home)
+// Must run before React renders so the slots are in place.
+window.history.replaceState({ idx: -1 }, "");
+window.history.pushState({ idx: 0 }, "");
+
+function useBackableMemoryLocation(): [string, (to: string) => void] {
+  const [path, memNavigate] = rawUseMemoryLocation();
+
+  // Internal path stack — mirrors what would have been the URL history
+  const stackRef = useRef<string[]>(["/"]);
+  const idxRef  = useRef<number>(0);
+
+  useEffect(() => {
+    const onPopState = (e: PopStateEvent) => {
+      const targetIdx: number =
+        typeof e.state?.idx === "number" ? e.state.idx : -1;
+
+      if (targetIdx < 0) {
+        // Pressed Back past the sentinel — bounce forward, stay in app
+        window.history.go(1);
+        return;
+      }
+
+      idxRef.current = targetIdx;
+      const targetPath = stackRef.current[targetIdx] ?? "/";
+      memNavigate(targetPath);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [memNavigate]);
+
+  const navigate = useCallback(
+    (to: string) => {
+      // Advance index, discard any forward history
+      idxRef.current += 1;
+      stackRef.current = stackRef.current.slice(0, idxRef.current);
+      stackRef.current.push(to);
+
+      // Push a browser history entry at the same URL so back button has
+      // something to pop — works on both desktop and mobile (Android/iOS)
+      window.history.pushState({ idx: idxRef.current }, "");
+
+      memNavigate(to);
+    },
+    [memNavigate]
+  );
+
+  return [path, navigate];
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -78,7 +138,7 @@ function App() {
         <AdminProvider>
           <BackNavigationProvider>
             <TooltipProvider>
-              <WouterRouter hook={useMemoryLocation}>
+              <WouterRouter hook={useBackableMemoryLocation}>
                 <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
                   <Router />
                 </div>
