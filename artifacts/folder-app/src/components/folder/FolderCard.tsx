@@ -34,7 +34,8 @@ export function FolderCard({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const startPress = useCallback(() => {
-    if (reorderMode || !onMove) return;
+    // Long-press move is admin-only
+    if (!isAdmin || reorderMode || !onMove) return;
     setPressing(true);
     timerRef.current = setTimeout(() => {
       suppressNextClick.current = true;
@@ -42,7 +43,7 @@ export function FolderCard({
       if (navigator.vibrate) navigator.vibrate(40);
       onMove(folder);
     }, LONG_PRESS_MS);
-  }, [folder, onMove, reorderMode]);
+  }, [folder, isAdmin, onMove, reorderMode]);
 
   const cancelPress = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
@@ -171,8 +172,9 @@ export function FolderCard({
           onClick={e => { if (suppressNextClick.current) { suppressNextClick.current = false; e.preventDefault(); } }}
         >
           {cardBody}
+          {/* "Hold to Move" overlay — only shown to admin during long-press */}
           <AnimatePresence>
-            {pressing && (
+            {pressing && isAdmin && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
