@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _adminKey: string | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,14 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Set an admin key that is sent as the `x-admin-key` header on every request.
+ * Pass `null` to clear the key.
+ */
+export function setAdminKey(key: string | null): void {
+  _adminKey = key;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -356,6 +365,11 @@ export async function customFetch<T = unknown>(
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
     }
+  }
+
+  // Attach admin key when one is set.
+  if (_adminKey && !headers.has("x-admin-key")) {
+    headers.set("x-admin-key", _adminKey);
   }
 
   const requestInfo = { method, url: resolveUrl(input) };
