@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
-
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,21 +22,6 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
-
-
-// Custom hash-based location hook — entire app lives at one URL, navigation via #hash
-function useHashLocation(): [string, (path: string, ...args: unknown[]) => void] {
-  const [path, setPath] = useState(() =>
-    window.location.hash ? window.location.hash.slice(1) || "/" : "/"
-  );
-  useEffect(() => {
-    const handler = () => setPath(window.location.hash.slice(1) || "/");
-    window.addEventListener("hashchange", handler);
-    return () => window.removeEventListener("hashchange", handler);
-  }, []);
-  const navigate = (to: string) => { window.location.hash = to; };
-  return [path, navigate];
-}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,7 +74,7 @@ function App() {
         <AdminProvider>
           <BackNavigationProvider>
             <TooltipProvider>
-              <WouterRouter hook={useHashLocation}>
+              <WouterRouter>
                 <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
                   <Router />
                 </div>
