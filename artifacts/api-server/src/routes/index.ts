@@ -9,9 +9,15 @@ import battleRouter from "./battle";
 const ADMIN_KEY = "HTR-CHORCHA-ADMIN-2025";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
+// Public POST routes that don't require admin access
+const PUBLIC_POST_PREFIXES = [
+  "/mock-exam/generate",  // mock exam page + bot battle
+];
+
 function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!MUTATING.has(req.method)) { next(); return; }
-  if (req.path.startsWith("/api/battle/")) { next(); return; }
+  // Allow public POST routes
+  if (PUBLIC_POST_PREFIXES.some(p => req.path.startsWith(p))) { next(); return; }
   const key = req.headers["x-admin-key"];
   if (key !== ADMIN_KEY) {
     res.status(401).json({ error: "Admin access required" });
