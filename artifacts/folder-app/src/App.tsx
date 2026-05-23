@@ -1,4 +1,5 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
+import { memoryLocation } from "wouter/memory-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,6 +23,9 @@ import { AdminProvider } from "@/contexts/AdminContext";
 import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
+
+// URL bar always stays at https://tasty-dy1.pages.dev/ — navigation is internal
+const { hook: useMemoryLocation } = memoryLocation({ path: "/" });
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,7 +78,7 @@ function App() {
         <AdminProvider>
           <BackNavigationProvider>
             <TooltipProvider>
-              <WouterRouter>
+              <WouterRouter hook={useMemoryLocation}>
                 <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
                   <Router />
                 </div>
