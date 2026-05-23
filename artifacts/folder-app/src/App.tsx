@@ -1,6 +1,5 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
-import { memoryLocation } from "wouter/memory-location";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,72 +24,66 @@ import { BackNavigationProvider } from "@/contexts/BackNavigationContext";
 
 export { useTheme, ThemeContext } from "@/lib/theme";
 
-// ─── Dynamic single-URL router with full back-button support ─────────────────
+// ─── Single-URL router with working back button ───────────────────────────────
 //
-// How it works:
-//   • URL bar is ALWAYS locked to "/" — never changes.
-//   • Every internal navigate() pushes a real browser history entry (same URL,
-//     different state) so the phone back button, Android hardware key, iOS
-//     swipe gesture, and desktop Alt+← all fire popstate correctly.
-//   • The target path is stored INSIDE the browser state object — not just a
-//     JS array. This means it survives tab suspension on mobile (OS kills the
-//     tab in background, user reopens it and presses back — still works).
-//   • A sentinel entry at idx:-1 sits before the first page. If the user
-//     presses Back from the very first page, we detect idx<0 and call
-//     history.go(+1) to bounce back in — the tab never closes unexpectedly.
-//   • A lock flag prevents re-entrant navigation from rapid back-taps.
+// Fully self-contained — no wouter memory-location internals involved.
+//
+// • URL bar is always locked to "/".
+// • Every navigate() pushes a real browser history entry (same URL, different
+//   state) so the phone back button, Android hardware key, iOS swipe, and
+//   desktop ← button all fire popstate which we catch and handle.
+// • The target path is stored IN the browser state object so it survives
+//   mobile OS tab suspension (Android/iOS kill backgrounded tabs).
+// • A sentinel entry at idx:-1 guards the bottom of the stack — if the user
+//   presses Back from the very first page we bounce them forward instead of
+//   closing the tab.
+// • A lock flag prevents re-entrant handling from rapid back taps.
 
-const { hook: rawUseMemoryLocation } = memoryLocation({ path: "/" });
+type NavState = { idx: number; path: string };
 
-// Seed browser history on first load:
-//   [idx:-1, sentinel] → [idx:0, home="/"]
-// replaceState overwrites the initial blank entry; pushState adds home on top.
-window.history.replaceState({ idx: -1, path: "/" }, "");
-window.history.pushState({ idx: 0, path: "/" }, "");
-
-type HistoryState = { idx: number; path: string };
-
-function useBackableMemoryLocation(): [string, (to: string) => void] {
-  const [path, memNavigate] = rawUseMemoryLocation();
+function useSingleUrlRouter(): [string, (to: string, ...args: unknown[]) => void] {
+  const [path, setPath] = useState<string>("/");
   const idxRef  = useRef<number>(0);
-  const lockRef = useRef<boolean>(false); // blocks re-entrant popstate handling
+  const lockRef = useRef<boolean>(false);
 
   useEffect(() => {
+    // Slot -1: sentinel (before the app begins)
+    // Slot  0: home
+    window.history.replaceState({ idx: -1, path: "/" } satisfies NavState, "");
+    window.history.pushState({ idx:  0, path: "/" } satisfies NavState, "");
+
     const onPopState = (e: PopStateEvent) => {
       if (lockRef.current) return;
 
-      const state = (e.state ?? {}) as Partial<HistoryState>;
-      const targetIdx  = typeof state.idx  === "number" ? state.idx  : -1;
-      const targetPath = typeof state.path === "string"  ? state.path : "/";
+      const state  = (e.state ?? {}) as Partial<NavState>;
+      const idx    = typeof state.idx  === "number" ? state.idx  : -1;
+      const target = typeof state.path === "string"  ? state.path : "/";
 
-      // Hit the sentinel — user pressed Back from the very first page.
+      // Sentinel hit — user pressed Back from the first page.
       // Bounce forward so the tab stays open.
-      if (targetIdx < 0) {
+      if (idx < 0) {
         lockRef.current = true;
         window.history.go(1);
-        // Release lock after the go(1) history event settles
-        setTimeout(() => { lockRef.current = false; }, 100);
+        setTimeout(() => { lockRef.current = false; }, 150);
         return;
       }
 
-      idxRef.current = targetIdx;
-      memNavigate(targetPath);
+      idxRef.current = idx;
+      setPath(target);
     };
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [memNavigate]);
+  }, []);
 
-  const navigate = useCallback(
-    (to: string) => {
-      if (lockRef.current) return;
-      idxRef.current += 1;
-      // Push with the target path embedded in state — survives mobile tab suspend
-      window.history.pushState({ idx: idxRef.current, path: to } satisfies HistoryState, "");
-      memNavigate(to);
-    },
-    [memNavigate]
-  );
+  const navigate = useCallback((to: string) => {
+    if (lockRef.current) return;
+    idxRef.current += 1;
+    // Push a real browser entry at the same URL — gives back button something to pop.
+    // Path is embedded in state so it works even after mobile OS tab suspend.
+    window.history.pushState({ idx: idxRef.current, path: to } satisfies NavState, "");
+    setPath(to);
+  }, []);
 
   return [path, navigate];
 }
@@ -147,7 +140,7 @@ function App() {
         <AdminProvider>
           <BackNavigationProvider>
             <TooltipProvider>
-              <WouterRouter hook={useBackableMemoryLocation}>
+              <WouterRouter hook={useSingleUrlRouter}>
                 <div className="min-h-[100dvh] bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
                   <Router />
                 </div>
