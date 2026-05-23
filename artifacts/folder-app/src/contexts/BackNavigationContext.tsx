@@ -29,6 +29,10 @@ const BackNavContext = createContext<BackNavContextType>({
 
 const SPA_MARKER = "__spa_back__";
 
+// Tag used by the single-URL router — BackNavigationProvider must not touch
+// these entries; the router owns them entirely.
+const ROUTER_MARKER = "_router";
+
 export function BackNavigationProvider({ children }: { children: ReactNode }) {
   const handlers = useRef<BackEntry[]>([]);
   const initialized = useRef(false);
@@ -45,7 +49,10 @@ export function BackNavigationProvider({ children }: { children: ReactNode }) {
       window.location.href,
     );
 
-    const handlePopstate = (_e: PopStateEvent) => {
+    const handlePopstate = (e: PopStateEvent) => {
+      // Router-owned entries — let the router's own listener handle these.
+      if (e.state?.[ROUTER_MARKER] === true) return;
+
       // Walk from the top of the stack to find the first live (non-consumed) entry
       for (let i = handlers.current.length - 1; i >= 0; i--) {
         const entry = handlers.current[i];
