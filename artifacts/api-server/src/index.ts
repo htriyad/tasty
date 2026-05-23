@@ -1,6 +1,9 @@
+import { createServer } from "http";
+import { Server } from "socket.io";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { pool } from "@workspace/db";
+import { registerBattleHandlers } from "./battle/socketHandlers";
 
 async function runMigrations() {
   const client = await pool.connect();
@@ -42,27 +45,27 @@ async function runMigrations() {
 }
 
 const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
+if (!rawPort) throw new Error("PORT environment variable is required but was not provided.");
 const port = Number(rawPort);
+if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${rawPort}"`);
 
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+// Create HTTP server and attach Socket.IO for real-time battle feature
+const httpServer = createServer(app);
 
-app.listen(port, (err) => {
+const io = new Server(httpServer, {
+  path: "/api/socket.io",
+  cors: { origin: "*", methods: ["GET", "POST"] },
+  transports: ["polling", "websocket"],
+});
+
+registerBattleHandlers(io);
+
+httpServer.listen(port, (err?: Error) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
-
   logger.info({ port }, "Server listening");
-
   // Run migrations in background so startup health check passes immediately
   runMigrations().catch((err) => {
     logger.error({ err }, "Migration error (non-fatal)");
