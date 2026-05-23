@@ -11,18 +11,28 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render API
+      - name: Wake up Render (attempt 1)
         run: |
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://tasty-api-jwy1.onrender.com/api/healthz)
-          echo "Render /api/healthz → HTTP $STATUS"
+          echo "Attempt 1 → HTTP $STATUS"
           if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "✅ Render is awake"
+            echo "✅ Render is alive"
+            exit 0
+          fi
+          echo "⏳ Cold start detected, waiting 20s..."
+          sleep 20
+
+      - name: Wake up Render (attempt 2 — cold start recovery)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 45 https://tasty-api-jwy1.onrender.com/api/healthz)
+          echo "Attempt 2 → HTTP $STATUS"
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "✅ Render awake after retry"
           else
-            echo "⚠️ Render returned $STATUS — it may be waking up"
+            echo "⚠️ Render still not responding (status $STATUS)"
           fi
 
-      - name: Second ping after wake-up (if needed)
+      - name: Verify data endpoint
         run: |
-          sleep 10
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://tasty-api-jwy1.onrender.com/api/healthz)
-          echo "Follow-up ping → HTTP $STATUS"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 https://tasty-api-jwy1.onrender.com/api/folders)
+          echo "Data endpoint → HTTP $STATUS"
