@@ -16,9 +16,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Show connection target (sanitized)
           echo "Connecting to DB..."
-          # Create tables
           psql "$DATABASE_URL" -c "
           CREATE TABLE IF NOT EXISTS folders (
             id SERIAL PRIMARY KEY, name TEXT NOT NULL, parent_id INTEGER,
@@ -51,5 +49,18 @@ jobs:
             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
             CONSTRAINT uq_link UNIQUE (question_id, set_id)
           );
+          CREATE TABLE IF NOT EXISTS saved_questions (
+            id SERIAL PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            question_id TEXT NOT NULL,
+            question_text TEXT NOT NULL DEFAULT '',
+            set_id INTEGER,
+            set_name TEXT,
+            question_type TEXT DEFAULT 'mcq',
+            is_starred BOOLEAN NOT NULL DEFAULT FALSE,
+            saved_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            CONSTRAINT uq_saved UNIQUE (session_id, question_id)
+          );
+          CREATE INDEX IF NOT EXISTS idx_saved_session ON saved_questions(session_id);
           SELECT 'Tables created OK' AS result;
           "
