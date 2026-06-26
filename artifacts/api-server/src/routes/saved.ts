@@ -14,6 +14,27 @@ router.get("/saved", async (req, res): Promise<void> => {
   res.json(result.rows);
 });
 
+router.get("/saved/practice", async (req, res): Promise<void> => {
+  const session = typeof req.query.session === "string" ? req.query.session.trim() : "";
+  if (!session) { res.status(400).json({ error: "session required" }); return; }
+  const starredOnly = req.query.starred === "true";
+  const result = await db.execute(sql`
+    SELECT q.id, q.question_text, q.options, q.answer, q.type,
+           sq.is_starred, sq.set_name
+    FROM saved_questions sq
+    JOIN questions q ON q.id = CAST(sq.question_id AS INTEGER)
+    WHERE sq.session_id = ${session}
+      AND q.type = 'mcq'
+      AND q.hidden = FALSE
+      AND jsonb_array_length(q.options) > 0
+      AND q.answer IS NOT NULL AND q.answer != ''
+      ${starredOnly ? sql`AND sq.is_starred = TRUE` : sql``}
+    ORDER BY sq.saved_at DESC
+  `);
+  const rows = [...result.rows].sort(() => Math.random() - 0.5);
+  res.json(rows);
+});
+
 router.post("/saved", async (req, res): Promise<void> => {
   const { session, questionId, questionText, setId, setName, questionType } = req.body ?? {};
   if (!session || !questionId) { res.status(400).json({ error: "session and questionId required" }); return; }
