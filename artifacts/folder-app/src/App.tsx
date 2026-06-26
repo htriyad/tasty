@@ -10,6 +10,7 @@ import { QuestionSetView } from "@/pages/QuestionSetView";
 import { MockExam } from "@/pages/MockExam";
 import { Bookmarks } from "@/pages/Bookmarks";
 import { WeakQuestions } from "@/pages/WeakQuestions";
+import { PracticeSaved } from "@/pages/PracticeSaved";
 import Dashboard from "@/pages/Dashboard";
 import Folders from "@/pages/Folders";
 import FolderDetail from "@/pages/FolderDetail";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/battle" component={Battle} />
       <Route path="/mock-exam" component={MockExam} />
       <Route path="/bookmarks" component={Bookmarks} />
+      <Route path="/practice-saved" component={PracticeSaved} />
       <Route path="/weak-questions" component={WeakQuestions} />
       <Route path="/folders/:id" component={FolderView} />
       <Route path="/sets/:id" component={QuestionSetView} />
