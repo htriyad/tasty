@@ -5,18 +5,18 @@ import questionSetsRouter from "./questionSets";
 import chorchaRouter from "./chorcha";
 import migrateRouter from "./migrate";
 import battleRouter from "./battle";
+import savedRouter from "./saved";
 
 const ADMIN_KEY = "HTR-CHORCHA-ADMIN-2025";
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-// Public POST routes that don't require admin access
 const PUBLIC_POST_PREFIXES = [
-  "/mock-exam/generate",  // mock exam page + bot battle
+  "/mock-exam/generate",
+  "/saved",
 ];
 
 function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if (!MUTATING.has(req.method)) { next(); return; }
-  // Allow public POST routes
   if (PUBLIC_POST_PREFIXES.some(p => req.path.startsWith(p))) { next(); return; }
   const key = req.headers["x-admin-key"];
   if (key !== ADMIN_KEY) {
@@ -35,5 +35,6 @@ router.use(questionSetsRouter);
 router.use(chorchaRouter);
 router.use(migrateRouter);
 router.use(battleRouter);
+router.use(savedRouter);
 
 export default router;
