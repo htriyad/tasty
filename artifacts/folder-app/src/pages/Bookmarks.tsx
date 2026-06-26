@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Bookmark, Trash2, BookOpen, ChevronRight, Home as HomeIcon, Hash, ArrowRight, Star, Search } from "lucide-react";
+import { Bookmark, Trash2, BookOpen, ChevronRight, Home as HomeIcon, Hash, ArrowRight, Star, Search, Play } from "lucide-react";
 import { readBookmarks, saveBookmarks, fetchSavedFromServer, removeBookmarkFromServer, toggleStarOnServer, ServerSavedItem } from "@/lib/localStore";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { MathText } from "@/components/folder/MathText";
@@ -57,6 +57,8 @@ export function Bookmarks() {
   };
 
   const starredCount = items.filter(i => i.is_starred).length;
+  const mcqCount = items.filter(i => i.question_type === "mcq").length;
+  const starredMcqCount = items.filter(i => i.is_starred && i.question_type === "mcq").length;
 
   const filtered = items
     .filter(i => filter === "all" || i.is_starred)
@@ -89,6 +91,27 @@ export function Bookmarks() {
           </p>
         </div>
       </div>
+
+      {/* Practice buttons */}
+      {!loading && mcqCount > 0 && (
+        <div className="flex gap-2">
+          <Link href="/practice-saved" className="flex-1">
+            <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 active:scale-[0.98]"
+              style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
+              <Play className="w-3.5 h-3.5" fill="currentColor" />
+              Practice All ({mcqCount})
+            </button>
+          </Link>
+          {starredMcqCount > 0 && (
+            <Link href="/practice-saved?starred=1">
+              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-[0.98] bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25">
+                <Star className="w-3.5 h-3.5" fill="currentColor" />
+                Starred ({starredMcqCount})
+              </button>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Search */}
       <div className="relative">
@@ -148,7 +171,6 @@ export function Bookmarks() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="rounded-2xl border border-border bg-card group overflow-hidden">
 
-                {/* Question body */}
                 <button
                   onClick={() => item.set_id && navigate(`/sets/${item.set_id}?highlight=${item.question_id}`)}
                   className="w-full text-left p-4 space-y-3 hover:bg-muted/40 transition-colors"
@@ -172,7 +194,6 @@ export function Bookmarks() {
                   <p className="text-xs text-muted-foreground truncate">{item.set_name}</p>
                 </button>
 
-                {/* Action row */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-t border-border bg-muted/20">
                   <button onClick={() => toggleStar(item)}
                     className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
