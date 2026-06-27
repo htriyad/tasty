@@ -11,7 +11,7 @@ router.get("/saved", async (req, res): Promise<void> => {
     SELECT
       sq.id, sq.question_id, sq.question_text, sq.set_id, sq.set_name,
       sq.question_type, sq.is_starred, sq.saved_at,
-      q.options, q.answer, q.parts, q.solution,
+      q.options, q.answer, q.parts, q.solution, q.stem_images,
       f1.name  AS folder_name,
       f2.name  AS folder_parent_name,
       f3.name  AS folder_grandparent_name
@@ -32,7 +32,7 @@ router.get("/saved/practice", async (req, res): Promise<void> => {
   if (!session) { res.status(400).json({ error: "session required" }); return; }
   const starredOnly = req.query.starred === "true";
   const result = await db.execute(sql`
-    SELECT q.id, q.question_text, q.options, q.answer, q.type,
+    SELECT q.id, q.question_text, q.options, q.answer, q.type, q.stem_images,
            sq.is_starred, sq.set_name
     FROM saved_questions sq
     JOIN questions q ON q.id = CAST(sq.question_id AS INTEGER)
