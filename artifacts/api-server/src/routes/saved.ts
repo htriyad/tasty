@@ -11,9 +11,16 @@ router.get("/saved", async (req, res): Promise<void> => {
     SELECT
       sq.id, sq.question_id, sq.question_text, sq.set_id, sq.set_name,
       sq.question_type, sq.is_starred, sq.saved_at,
-      q.options, q.answer, q.parts, q.solution
+      q.options, q.answer, q.parts, q.solution,
+      f1.name  AS folder_name,
+      f2.name  AS folder_parent_name,
+      f3.name  AS folder_grandparent_name
     FROM saved_questions sq
-    LEFT JOIN questions q ON q.id = CAST(sq.question_id AS INTEGER)
+    LEFT JOIN questions     q   ON q.id   = CAST(sq.question_id AS INTEGER)
+    LEFT JOIN question_sets qs  ON qs.id  = sq.set_id
+    LEFT JOIN folders       f1  ON f1.id  = qs.folder_id
+    LEFT JOIN folders       f2  ON f2.id  = f1.parent_id
+    LEFT JOIN folders       f3  ON f3.id  = f2.parent_id
     WHERE sq.session_id = ${session}
     ORDER BY sq.saved_at DESC
   `);
