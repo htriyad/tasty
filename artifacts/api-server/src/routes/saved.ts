@@ -8,8 +8,14 @@ router.get("/saved", async (req, res): Promise<void> => {
   const session = typeof req.query.session === "string" ? req.query.session.trim() : "";
   if (!session) { res.status(400).json({ error: "session required" }); return; }
   const result = await db.execute(sql`
-    SELECT id, question_id, question_text, set_id, set_name, question_type, is_starred, saved_at
-    FROM saved_questions WHERE session_id = ${session} ORDER BY saved_at DESC
+    SELECT
+      sq.id, sq.question_id, sq.question_text, sq.set_id, sq.set_name,
+      sq.question_type, sq.is_starred, sq.saved_at,
+      q.options, q.answer, q.parts, q.solution
+    FROM saved_questions sq
+    LEFT JOIN questions q ON q.id = CAST(sq.question_id AS INTEGER)
+    WHERE sq.session_id = ${session}
+    ORDER BY sq.saved_at DESC
   `);
   res.json(result.rows);
 });
