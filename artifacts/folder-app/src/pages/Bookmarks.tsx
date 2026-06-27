@@ -57,7 +57,6 @@ export function Bookmarks() {
   };
 
   const starredCount = items.filter(i => i.is_starred).length;
-  const mcqCount = items.filter(i => i.question_type === "mcq").length;
   const starredMcqCount = items.filter(i => i.is_starred && i.question_type === "mcq").length;
 
   const filtered = items
@@ -92,14 +91,14 @@ export function Bookmarks() {
         </div>
       </div>
 
-      {/* Practice buttons */}
-      {!loading && mcqCount > 0 && (
+      {/* Practice buttons — always visible */}
+      {!loading && (
         <div className="flex gap-2">
           <Link href="/practice-saved" className="flex-1">
             <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-90 active:scale-[0.98]"
               style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}>
               <Play className="w-3.5 h-3.5" fill="currentColor" />
-              Practice All ({mcqCount})
+              Practice Saved ({items.length})
             </button>
           </Link>
           {starredMcqCount > 0 && (
